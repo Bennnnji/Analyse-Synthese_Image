@@ -11,6 +11,8 @@ img = cv2.imread("./images/startImage.jpg")
 
 cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
+img = img[5:-5, 5:-5]
+
 list_widePieces = []
 list_widePieces_mask = []
 list_contours_sorted = []
@@ -69,14 +71,11 @@ def sort_contours(contours, img, tolerance_ratio=0.1):
     return sorted_contours
 
 
-def Test_5(img, tolerance, tolH=0, tolS=0, tolV=0):
-    img = cv2.medianBlur(img, 5)
-
-    # enleve 5 pixels de chaque coté
-    img = img[5:-5, 5:-5]
+def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
+    imgBlured = cv2.medianBlur(img, 5)
 
     # on convertit l'image en LAB
-    img_lab = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
+    img_lab = cv2.cvtColor(imgBlured, cv2.COLOR_RGB2LAB)
 
     # Calcule l'histogramme LAB
     hist_l = cv2.calcHist([img_lab], [0], None, [256], [0, 256])
@@ -96,9 +95,9 @@ def Test_5(img, tolerance, tolH=0, tolS=0, tolV=0):
             # si la couleur est trop proche de la couleur dominante
             # on la considère comme étant la couleur dominante
             if (
-                abs(img_lab[i, j][1] - dominant_color_a) < tolerance + tolH
-                and abs(img_lab[i, j][2] - dominant_color_b) < tolerance + tolS
-                and abs(img_lab[i, j][0] - dominant_color_l) < tolerance + tolV
+                abs(img_lab[i, j][1] - dominant_color_a) < tolerance + tolA
+                and abs(img_lab[i, j][2] - dominant_color_b) < tolerance + tolB
+                and abs(img_lab[i, j][0] - dominant_color_l) < tolerance + tolL
             ):
                 img_lab[i, j] = 0
             else:
@@ -125,6 +124,8 @@ def Test_5(img, tolerance, tolH=0, tolS=0, tolV=0):
     img_lab = cv2.erode(img_lab, kernel, iterations=1)
 
     img_labL = img_lab[:, :, 0]
+
+    cv2.imshow("img_labL", img_lab)
 
     # # find contours
     contours, hierarchy = cv2.findContours(
@@ -178,7 +179,7 @@ def Test_5(img, tolerance, tolH=0, tolS=0, tolV=0):
             # Créer un masque vide
             mask = np.zeros_like(img_labL)
 
-            # Dessiner le contour sur le masque
+            # Dessiner le contour sur le masque pour isoler la pièce
             cv2.drawContours(mask, contours, i, 255, -1)
 
             # Extraire la pièce de l'image originale
@@ -209,18 +210,6 @@ def Test_5(img, tolerance, tolH=0, tolS=0, tolV=0):
     return img_lab
 
 
-# print("Test 1")
-# Test_1(img)
-
-# print("Test 2")
-# Test_2(img)
-
-# print("Test 3")
-# Test_3(img)
-
-# print("Test 4")
-# Test_4(img)
-
 print("Test 5")
 Test_5(img, 12, 4, 5, 10)
 
@@ -236,6 +225,71 @@ saveInFile(list_cutPieces_mask, "Mask/cutMask/")
 saveInFile(list_widePieces_mask, "Mask/wideMask/")
 
 
+def displayPiece(
+    pieceIndex,
+    img=img,
+    list_cutPieces=list_cutPieces,
+    list_cutPieces_mask=list_cutPieces_mask,
+    list_widePieces=list_widePieces,
+    list_widePieces_mask=list_widePieces_mask,
+):
+    # partage le graphique en 4 colonnes
+    fig, axs = plt.subplots(1, 4, figsize=(20, 20))
+    fig.suptitle("Vertically stacked subplots")
+
+    axs[0].imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    axs[0].set_title("Image originale")
+    axs[1].imshow(list_widePieces_mask[pieceIndex], cmap="gray")
+    axs[1].set_title("Masque de la pièce")
+    axs[2].imshow(cv2.cvtColor(list_cutPieces[pieceIndex], cv2.COLOR_BGR2RGB))
+    axs[2].set_title("Pièce coupée")
+    axs[3].imshow(list_cutPieces_mask[pieceIndex], cmap="gray")
+    axs[3].set_title("Pièce coupée avec masque")
+
+    plt.show()
+
+
+def displayPieceCut(pieceIndex):
+    cv2.cvtColor(list_cutPieces[pieceIndex], cv2.COLOR_BGR2RGB)
+    contour, _ = cv2.findContours(
+        list_cutPieces_mask[pieceIndex], cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+    )
+
+    # Regarde si les contours ont été trouvés
+    if len(contour) > 0:
+        # on dessine les contours
+        piece_cutWithCnt = cv2.drawContours(
+            list_cutPieces[pieceIndex], contour, -1, (255, 0, 255), 2
+        )
+    else:
+        print("No puzzle pieces found")
+
+    fig, axs = plt.subplots(1, 4, figsize=(20, 20))
+    fig.suptitle("Vertically stacked subplots")
+
+    axs[0].imshow(cv2.cvtColor(piece_cutWithCnt, cv2.COLOR_BGR2RGB))
+    axs[0].set_title("Pièce coupée avec contours")
+
+    # on va simplifier les contours d ela pièce
+    epsilon = 0.01 * cv2.arcLength(contour[0], True)
+    approx = cv2.approxPolyDP(contour[0], epsilon, True)
+
+    # on dessine les contours simplifiés
+    piece_cutWithSplCnt = cv2.drawContours(
+        list_cutPieces[pieceIndex], [approx], -1, (255, 0, 255), 2
+    )
+
+    axs[1].imshow(cv2.cvtColor(piece_cutWithSplCnt, cv2.COLOR_BGR2RGB))
+    axs[1].set_title("Pièce coupée avec contours simplifiés")
+
+    axs[3].imshow(list_cutPieces_mask[pieceIndex], cmap="gray")
+    axs[3].set_title("Pièce coupée masque")
+
+    plt.show()
+
+
+# displayPiece(20)
+displayPieceCut(20)
 key = cv2.waitKey(0) & 0x0FF
 if key == 27:
     print("arrêt du programme par l'utilisateur")
