@@ -125,7 +125,7 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
 
     img_labL = img_lab[:, :, 0]
 
-    cv2.imshow("img_labL", img_lab)
+    # cv2.imshow("img_labL", img_lab)
 
     # # find contours
     contours, hierarchy = cv2.findContours(
@@ -169,7 +169,7 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
                 2,  # Epaisseur de la ligne
             )
 
-        cv2.imshow("Pièces de puzzle en couleurs", img_pieces)
+        # cv2.imshow("Pièces de puzzle en couleurs", img_pieces)
         cv2.waitKey(0)
 
         # avec chaque contour, on va créer un masque pour isoler la pièce
@@ -249,18 +249,30 @@ def displayPiece(
     plt.show()
 
 
+def count_line_contacts(line, contour_mask, image):
+    contacts = 0
+    contacts_points = []
+
+    for point in line:
+        if contour_mask[point[1], point[0]] > 0:
+            contacts += 1
+            contacts_points.append(point)
+            cv2.circle(image, point, 2, (0, 0, 255), -1)
+
+    return contacts, contacts_points
+
+
 def displayPieceCut(pieceIndex):
     cv2.cvtColor(list_cutPieces[pieceIndex], cv2.COLOR_BGR2RGB)
     contour, _ = cv2.findContours(
-        list_cutPieces_mask[pieceIndex], cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+        list_cutPieces_mask[pieceIndex], cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
     )
 
+    cutedpiece = list_cutPieces[pieceIndex].copy()
     # Regarde si les contours ont été trouvés
     if len(contour) > 0:
         # on dessine les contours
-        piece_cutWithCnt = cv2.drawContours(
-            list_cutPieces[pieceIndex], contour, -1, (255, 0, 255), 2
-        )
+        piece_cutWithCnt = cv2.drawContours(cutedpiece, contour, -1, (255, 0, 255), 2)
     else:
         print("No puzzle pieces found")
 
@@ -270,17 +282,125 @@ def displayPieceCut(pieceIndex):
     axs[0].imshow(cv2.cvtColor(piece_cutWithCnt, cv2.COLOR_BGR2RGB))
     axs[0].set_title("Pièce coupée avec contours")
 
-    # on va simplifier les contours d ela pièce
-    epsilon = 0.01 * cv2.arcLength(contour[0], True)
-    approx = cv2.approxPolyDP(contour[0], epsilon, True)
+    # dessine des droitres partant de p1 {x1=40, y1=0} vers p2 {x2=40, y2=max} avec une épaisseur de 2 pixels
+    cv2.line(piece_cutWithCnt, (23, 0), (23, 1000), (0, 0, 255), 1)
+    # dessine des droitres partant de p1 {x1=0, y1=40} vers p2 {x2=max, y2=40} avec une épaisseur de 2 pixels
+    cv2.line(piece_cutWithCnt, (0, 23), (1000, 23), (0, 0, 255), 1)
 
-    # on dessine les contours simplifiés
-    piece_cutWithSplCnt = cv2.drawContours(
-        list_cutPieces[pieceIndex], [approx], -1, (255, 0, 255), 2
+    # dessine des droitres partant de p1 {x1=piece_cutWithCnt.shape[1]-20, y1=0} vers p2 {x2=shape[1]-20, y2=shpae[0]} avec une épaisseur de 1 pixel
+    cv2.line(
+        piece_cutWithCnt,
+        (piece_cutWithCnt.shape[1] - 23, 0),
+        (piece_cutWithCnt.shape[1] - 23, piece_cutWithCnt.shape[0]),
+        (0, 0, 255),
+        1,
+    )
+    # dessine des droitres partant de p1 {x1=0, y1=shape[0]-20} vers p2 {x2=shape[1], y2=shape[0]-20} avec une épaisseur de 1 pixel
+    cv2.line(
+        piece_cutWithCnt,
+        (0, piece_cutWithCnt.shape[0] - 23),
+        (piece_cutWithCnt.shape[1], piece_cutWithCnt.shape[0] - 23),
+        (0, 0, 255),
+        1,
     )
 
-    axs[1].imshow(cv2.cvtColor(piece_cutWithSplCnt, cv2.COLOR_BGR2RGB))
-    axs[1].set_title("Pièce coupée avec contours simplifiés")
+    # avec ces droites, on va regarder combien de fois on touche un contour de la pièce
+    # si on touche 4 fois, alors on a trouvé un trou dans la pièce
+    # si on touche 2 fois, alors on a trouvé un bord de la pièce
+
+    # Récupérez le masque du contour pour faciliter la détection des contacts
+    contour_mask = cv2.drawContours(
+        np.zeros_like(list_cutPieces_mask[pieceIndex]), contour, -1, 255, 1
+    )
+
+    # Définissez les lignes à tracer
+    lines = [
+        ([(23, y) for y in range(piece_cutWithCnt.shape[0])], "Vertical 1"),
+        (
+            [
+                (piece_cutWithCnt.shape[1] - 23, y)
+                for y in range(piece_cutWithCnt.shape[0])
+            ],
+            "Vertical 2",
+        ),
+        ([(x, 23) for x in range(piece_cutWithCnt.shape[1])], "Horizontal 1"),
+        (
+            [
+                (x, piece_cutWithCnt.shape[0] - 23)
+                for x in range(piece_cutWithCnt.shape[1])
+            ],
+            "Horizontal 2",
+        ),
+    ]
+
+    # Parcourez les lignes et comptez les contacts avec les contours
+    for line, line_name in lines:
+        contacts, contacts_points = count_line_contacts(
+            line, contour_mask, piece_cutWithCnt
+        )
+        print(f"{line_name} a {contacts} contacts")
+        print(f"Les points de contact sont {contacts_points}")
+        if contacts == 4:
+            print(f"{line_name} a un trou")
+            # on fait la moyenne des points de contact pour trouver le centre du trou
+            center = (
+                int(np.mean([point[0] for point in contacts_points])),
+                int(np.mean([point[1] for point in contacts_points])),
+            )
+            print(f"Le centre du trou est {center}")
+            # on dessine un cercle de rayon 5 pixels au centre du trou
+            cv2.circle(piece_cutWithCnt, center, 2, (0, 255, 0), -1)
+            cv2.putText(
+                piece_cutWithCnt,
+                "Trou",
+                (center[0] + 5, center[1] + 5),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.4,
+                (0, 255, 0),
+                1,
+            )
+        elif contacts == 2:
+            # on fait la différence entre les deux points pour trouver la longueur du bord
+            length = int(
+                np.sqrt(
+                    (contacts_points[0][0] - contacts_points[1][0]) ** 2
+                    + (contacts_points[0][1] - contacts_points[1][1]) ** 2
+                )
+            )
+            # si elle est supérieure à 60 pixels, on considère que c'est le corps de la pièce
+            if length > 60:
+                print(f"{line_name} est le corps de la pièce")
+                # on dessine un rectangle autour du contour
+            else:
+                print(f"{line_name} a une protubérance")
+                # on fait la moyenne des points de contact pour trouver le centre du trou
+                center = (
+                    int(np.mean([point[0] for point in contacts_points])),
+                    int(np.mean([point[1] for point in contacts_points])),
+                )
+                print(f"Le centre de la couille est {center}")
+                # on dessine un cercle de rayon 5 pixels au centre du trou
+                cv2.circle(piece_cutWithCnt, center, 2, (0, 255, 0), -1)
+                cv2.putText(
+                    piece_cutWithCnt,
+                    "Couille",
+                    (center[0] + 5, center[1] + 5),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.4,
+                    (0, 255, 0),
+                    1,
+                )
+
+        else:
+            print(
+                f"{line_name} n'a pas de trou ni de protubérance, ce qui est impossible"
+            )
+
+    axs[1].imshow(cv2.cvtColor(piece_cutWithCnt, cv2.COLOR_BGR2RGB))
+    axs[1].set_title("Pièce coupée avec contours et indices")
+
+    axs[2].imshow(cv2.cvtColor(list_cutPieces[pieceIndex], cv2.COLOR_BGR2RGB))
+    axs[2].set_title("Pièce coupée")
 
     axs[3].imshow(list_cutPieces_mask[pieceIndex], cmap="gray")
     axs[3].set_title("Pièce coupée masque")
@@ -289,7 +409,8 @@ def displayPieceCut(pieceIndex):
 
 
 # displayPiece(20)
-displayPieceCut(20)
+for i in range(len(list_cutPieces)):
+    displayPieceCut(i)
 key = cv2.waitKey(0) & 0x0FF
 if key == 27:
     print("arrêt du programme par l'utilisateur")
