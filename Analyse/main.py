@@ -28,10 +28,32 @@ def clearFolder(filename):
         os.remove(f)
 
 
+def saveInFile(list, path, name=""):
+    for i, piece in enumerate(list):
+        print("Sauvegarde de " + path + str(i) + ".jpg : ", end="")
+        if cv2.imwrite(path + (str(i) if name == "" else name) + ".jpg", piece):
+            print("succès")
+        else:
+            print("Erreur")
+
+
+def random_non_red_color():
+    new_col_R = np.random.randint(0, 205)
+    new_col_G = np.random.randint(new_col_R / 2 + 50, 255)
+    new_col_B = np.random.randint(new_col_R / 2 + 50, 255)
+
+    # Si les valeurs G et B dépassent 255, les réduire à 255
+    new_col_G = min(new_col_G, 255)
+    new_col_B = min(new_col_B, 255)
+
+    return (new_col_R, new_col_G, new_col_B)
+
+
 clearFolder("./Mask/cutMask/*")
 clearFolder("./Mask/wideMask/*")
 clearFolder("./images/cutPieces/*")
 clearFolder("./images/widePieces/*")
+clearFolder("./images/infoPieces/*")
 
 
 def sort_contours(contours, img, tolerance_ratio=0.1):
@@ -76,12 +98,12 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
     imgBlured = cv2.medianBlur(img, 5)
 
     # on convertit l'image en LAB
-    img_lab = cv2.cvtColor(imgBlured, cv2.COLOR_RGB2LAB)
+    masqueB = cv2.cvtColor(imgBlured, cv2.COLOR_RGB2LAB)
 
     # Calcule l'histogramme LAB
-    hist_l = cv2.calcHist([img_lab], [0], None, [256], [0, 256])
-    hist_a = cv2.calcHist([img_lab], [1], None, [256], [0, 256])
-    hist_b = cv2.calcHist([img_lab], [2], None, [256], [0, 256])
+    hist_l = cv2.calcHist([masqueB], [0], None, [256], [0, 256])
+    hist_a = cv2.calcHist([masqueB], [1], None, [256], [0, 256])
+    hist_b = cv2.calcHist([masqueB], [2], None, [256], [0, 256])
 
     # on récupère la couleur dominante
     dominant_color_l = np.argmax(hist_l)
@@ -91,42 +113,43 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
     print("dominant_color : ", dominant_color_a, dominant_color_b)
 
     # on parcourt l'image
-    for i in range(img_lab.shape[0]):
-        for j in range(img_lab.shape[1]):
+    for i in range(masqueB.shape[0]):
+        for j in range(masqueB.shape[1]):
             # si la couleur est trop proche de la couleur dominante
             # on la considère comme étant la couleur dominante
             if (
-                abs(img_lab[i, j][1] - dominant_color_a) < tolerance + tolA
-                and abs(img_lab[i, j][2] - dominant_color_b) < tolerance + tolB
-                and abs(img_lab[i, j][0] - dominant_color_l) < tolerance + tolL
+                abs(masqueB[i, j][1] - dominant_color_a) < tolerance + tolA
+                and abs(masqueB[i, j][2] - dominant_color_b) < tolerance + tolB
+                and abs(masqueB[i, j][0] - dominant_color_l) < tolerance + tolL
             ):
-                img_lab[i, j] = 0
+                masqueB[i, j] = 0
             else:
-                img_lab[i, j] = 255
+                masqueB[i, j] = 255
     # fermeture
     kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (6, 6))
-    img_lab = cv2.morphologyEx(img_lab, cv2.MORPH_CLOSE, kernel)
+    masqueB = cv2.morphologyEx(masqueB, cv2.MORPH_CLOSE, kernel)
 
     # # ouverture
     kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (4, 4))
-    img_lab = cv2.morphologyEx(img_lab, cv2.MORPH_OPEN, kernel)
+    masqueB = cv2.morphologyEx(masqueB, cv2.MORPH_OPEN, kernel)
 
     kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (6, 6))
-    img_lab = cv2.morphologyEx(img_lab, cv2.MORPH_CLOSE, kernel)
+    masqueB = cv2.morphologyEx(masqueB, cv2.MORPH_CLOSE, kernel)
 
     kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (8, 8))
-    img_lab = cv2.morphologyEx(img_lab, cv2.MORPH_OPEN, kernel)
+    masqueB = cv2.morphologyEx(masqueB, cv2.MORPH_OPEN, kernel)
 
     # # dilate
     kernel = np.ones((1, 1), np.uint8)
-    img_lab = cv2.dilate(img_lab, kernel, iterations=1)
+    masqueB = cv2.dilate(masqueB, kernel, iterations=1)
 
     kernel = np.ones((1, 1), np.uint8)
-    img_lab = cv2.erode(img_lab, kernel, iterations=1)
+    masqueB = cv2.erode(masqueB, kernel, iterations=1)
 
-    img_labL = img_lab[:, :, 0]
+    img_labL = masqueB[:, :, 0]
 
-    # cv2.imshow("img_labL", img_lab)
+    # cv2.imshow("img_labL", masqueB)
+    saveInFile([masqueB], "./images/", "masque_binaire")
 
     # # find contours
     contours, hierarchy = cv2.findContours(
@@ -148,13 +171,9 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
         img_pieces = cv2.cvtColor(img_pieces, cv2.COLOR_GRAY2RGB)
 
         for i, cnt in enumerate(contours):
-            # Remplir la pièce avec une nuance de gris différente
-            new_col_R = np.random.randint(0, 255)
-            new_col_G = np.random.randint(0, 255)
-            new_col_B = np.random.randint(0, 255)
-            cv2.drawContours(
-                img_pieces, contours, i, (new_col_R, new_col_G, new_col_B), -1
-            )
+            # Remplir la pièce avec une couleur aléatoire
+            newColor = random_non_red_color()
+            cv2.drawContours(img_pieces, contours, i, newColor, -1)
 
             x, y, w, h = cv2.boundingRect(cnt)
             center_x, center_y = x + w // 2, y + h // 2
@@ -171,7 +190,8 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
             )
 
         # cv2.imshow("Pièces de puzzle en couleurs", img_pieces)
-        cv2.waitKey(0)
+        # cv2.waitKey(0)
+        saveInFile([img_pieces], "./images/", "pieces_couleurs_numérotées")
 
         # avec chaque contour, on va créer un masque pour isoler la pièce
         # et on va la stocker dans une liste
@@ -208,24 +228,20 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
     else:
         print("No puzzle pieces found")
 
-    return img_lab
+    return masqueB
 
 
 print("Test 5")
 Test_5(img, 12, 4, 5, 10)
 
 
-def saveInFile(list, path):
-    for i, piece in enumerate(list):
-        cv2.imwrite(path + str(i) + ".jpg", piece)
-
-
-saveInFile(list_cutPieces, "images/cutPieces/")
-saveInFile(list_widePieces, "images/widePieces/")
 saveInFile(list_cutPieces_mask, "Mask/cutMask/")
 saveInFile(list_widePieces_mask, "Mask/wideMask/")
+saveInFile(list_cutPieces, "images/cutPieces/")
+saveInFile(list_widePieces, "images/widePieces/")
 
 
+# Affiche les différentes vue d'une pièce
 def displayPiece(
     pieceIndex,
     img=img,
@@ -250,6 +266,7 @@ def displayPiece(
     plt.show()
 
 
+# Compte le nombre de contact entre une ligne et le contour d'une pièce
 def count_line_contacts(line, contour_mask, image):
     contacts = 0
     contacts_points = []
@@ -263,6 +280,7 @@ def count_line_contacts(line, contour_mask, image):
     return contacts, contacts_points
 
 
+# Affiche les différentes vue d'une pièce avec ses infos (Protubérances, Trous)
 def displayPieceCut(pieceIndex):
     cv2.cvtColor(list_cutPieces[pieceIndex], cv2.COLOR_BGR2RGB)
 
@@ -276,6 +294,8 @@ def displayPieceCut(pieceIndex):
         # on simplifie les contours pour avoir moins de points
 
         epsilon = 0.01 * cv2.arcLength(contour[0], True)
+        # pourquoi contour[0] ? car on a qu'un seul contour par pièce
+        # True pour dire que le contour est fermé
         approx = cv2.approxPolyDP(contour[0], epsilon, True)
 
         piece_cutWithCnt = cv2.drawContours(
@@ -391,8 +411,5 @@ saveInFile(list_cutPiecesWithInfos, "images/infoPieces/")
 
 print("Fin du programme !")
 
-key = cv2.waitKey(0) & 0x0FF
-if key == 27:
-    print("arrêt du programme par l'utilisateur")
-    cv2.destroyAllWindows()
-    sys.exit(0)
+cv2.destroyAllWindows()
+sys.exit(0)
