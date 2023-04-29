@@ -6,8 +6,7 @@
 
 ## Demarches utilisées
 
-image d'origine : 
-![image d'origine](./images/startImage.jpg)
+![image d'origine :](./images/startImage.jpg)
 
 ### 1. Création du masque binaire
 
@@ -23,6 +22,8 @@ image d'origine :
     et ouvertures avec  
     **`cv2.morphologyEx(image, cv2.MORPH_OPEN, noyau)`**  
     pour supprimer les petits trous et les petits points blancs
+
+![masque binaire :](./)
 
 ### 2. Détection des contours => Identification des pièces
 
@@ -50,7 +51,7 @@ image d'origine :
 
 
 
-- On prend le masque de la pièce trouvé précedemment et on fait un `bitwise_and(image de base, image de base, mask=masque trouvé précedemment)` ( ET ) avec l'image de base
+- On prend le masque de la pièce trouvé précedemment et on fait un **`bitwise_and(image de base, image de base, mask=masque trouvé précedemment)`** ( ET ) avec l'image de base
 
 ![image pièce n°5 :](./)
 
@@ -60,9 +61,9 @@ image d'origine :
 ___
 #### On enregistre les images donnée dans leur dossier réspéctif :  
 
-- **Mask/** , avec `wideMask/` pour les grands masques et `cutMask/` pour les masques rognés  
+- **Mask/** , avec **`wideMask/`** pour les grands masques et **`cutMask/`** pour les masques rognés  
 
-- **images/**, avec pareil, `widePieces/` et `cutPieces/`  
+- **images/**, avec pareil, **`widePieces/`** et **`cutPieces/`** 
 
 
 #### Après toute ces étapes, on arrive à afficher la pièce coupé, son masque, ses contours :
@@ -70,12 +71,12 @@ ___
 
 ___
 
-### 4. Identification des contours 
+### 4. Identification des contours
 
 - On simplifie les contours de la pièce avec **`cv2.approxPolyDP(contour, epsilon, true)`** avec : 
     - **contour** : le tableau de contours de la pièce.
     - **epsilon** : paramètre spécifiant la précision de l'approximation. 
-    - **true** :
+    - **true** : indique que le polygone approximé doit être fermé. ( polygone fermé ).
 
 - On trace des lignes horizontal et vertical sur chaques bords de la pièce. cad. :
     - **Vertical 1 :** Point 1:{18, 0} à Point 2:{18, Hauteur}
@@ -83,9 +84,12 @@ ___
     - **Horizontal 1 :** P1:{0 ; 23} à P2:{Longeur ; 23}
     - **Horizontal 2 :** P1:{0 ; Hauteur - 23} à P2:{Longeur ; Hauteur - 23}
 
-- On parcours ensuite chaque lignes et on compte les points de contact avec les contours grâce à la fonction `count_line_contact()`
+- On parcours ensuite chaque lignes et on compte les points de contact avec les contours grâce à la fonction **`count_line_contact(ligne, contours, image de base)`**
+    - **ligne** : la ligne qu'ont étudie.
+    - **contours** : le tableau de contours
+    - **image..** : image ( pour pouvoir dessiner les points de contact, en rouge )
 
-2 resultats pour une ligne : 
+2 resultats pour une ligne :
 
 - Il y a 4 point de contacts. C'est qu'il y'a un trou !
 
@@ -97,5 +101,4 @@ ___
 
 #### On applique cette methode sur toutes les pièces et on enregistre le tout dans `image/infoPieces`
 
-
-
+___
