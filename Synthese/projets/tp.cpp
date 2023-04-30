@@ -217,7 +217,7 @@ void computePixelColorSources(const std::vector<Source>& sources, const Scene& s
 }
 
 
-//--------------------------------------------------------avec antialiasing &  et un panneau en source de lumière--------------------------------------------------------------
+//--------------------------------------------------------avec antialiasing & sans dome--------------------------------------------------------------
 
 void avecAntialiasingSansDome(Scene scene, Position camera, std::vector<Source> sources, int width, int height)
 {
@@ -272,7 +272,7 @@ void avecAntialiasingSansDome(Scene scene, Position camera, std::vector<Source> 
     write_image(image, "image.png");
 }
 
-//--------------------------------------------------------avec antialiasing &  et un dome en source de lumière--------------------------------------------------------------
+//--------------------------------------------------------avec antialiasing & un dome en source de lumière--------------------------------------------------------------
 
 void avecAntialiasingAvecDome(Scene scene, Position camera, int width, int height)
 {
@@ -343,7 +343,7 @@ void avecAntialiasingAvecDome(Scene scene, Position camera, int width, int heigh
     write_image(image, "image.png");
 }
 
-//--------------------------------------------------------avec antialiasing &  et un panneau en source de lumière & un dome--------------------------------------------------------------
+//--------------------------------------------------------avec antialiasing & tout (dome + vector de sources) --------------------------------------------------------------
 
 void avecAntialiasingEtAll(Scene scene, Position camera, std::vector<Source> sources, int width, int height)
 {
