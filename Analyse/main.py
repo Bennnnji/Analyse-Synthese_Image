@@ -30,8 +30,10 @@ def clearFolder(filename):
 
 def saveInFile(list, path, name=""):
     for i, piece in enumerate(list):
-        print("Sauvegarde de " + path + str(i) + ".jpg : ", end="")
-        if cv2.imwrite(path + (str(i) if name == "" else name) + ".jpg", piece):
+        print("Sauvegarde de " + path + name + ".jpg : ", end="")
+        if cv2.imwrite(
+            path + (("pièce " + str(i)) if name == "" else name) + ".jpg", piece
+        ):
             print("succès")
         else:
             print("Erreur")
@@ -242,7 +244,7 @@ saveInFile(list_widePieces, "images/widePieces/")
 
 
 # Affiche les différentes vue d'une pièce
-def displayPiece(
+def view_piece(
     pieceIndex,
     img=img,
     list_cutPieces=list_cutPieces,
@@ -263,7 +265,9 @@ def displayPiece(
     axs[3].imshow(list_cutPieces_mask[pieceIndex], cmap="gray")
     axs[3].set_title("Pièce coupée avec masque")
 
-    plt.show()
+    # plt.show()
+    # enregistre l'image du graphique dans un fichier
+    plt.savefig("images/piece_découpe" + str(pieceIndex) + ".png")
 
 
 # Compte le nombre de contact entre une ligne et le contour d'une pièce
@@ -404,12 +408,14 @@ def displayPieceCut(pieceIndex):
     list_cutPiecesWithInfos.append(piece_cutWithCnt)
 
 
-for i in range(len(list_cutPieces)):
-    displayPieceCut(i)
+view_piece(7)
+
+[displayPieceCut(i) for i in range(len(list_cutPieces))]
 
 saveInFile(list_cutPiecesWithInfos, "images/infoPieces/")
 
 print("Fin du programme !")
+
 
 cv2.destroyAllWindows()
 sys.exit(0)
