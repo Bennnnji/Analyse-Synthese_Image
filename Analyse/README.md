@@ -17,12 +17,6 @@
 - [Fonction sort_pieces() : explication](#fonction-sort_pieces--explication)
 - [Tests réalisés et complications rencontrées](#tests-réalisés-et-complications-rencontrées)
 
-
-## ✍️ Contributeurs
-
-- **p2006010 - Boulet Benjamin : [Partie Analyse]**
-- **p2020351 - Faustmann Lucas : [Partie Synthèse]**
-
 ## Introduction
 
 Ce projet a pour but de créer un programme en Python qui permet d'identifier les pièces d'un puzzle.
