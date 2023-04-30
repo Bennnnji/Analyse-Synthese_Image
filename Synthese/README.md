@@ -113,7 +113,7 @@ Le fichier `projets/tp.cpp` contient le code principal du projet. C'est dans ce 
 
 - L'aspect pratique de l'UE, avec la réalisation d'un projet.
 - Les nombreux TP permettent de mieux comprendre les notions et de les retenir, c'est très appréciable.
-- Le sujet du projet est intéressant et nous d'explorer plusieurs aspects de la synthèse d'image.
+- Le sujet du projet est intéressant et nous a permis d'explorer plusieurs aspects de la synthèse d'image.
 
 # ✍️ Contributeurs
 
