@@ -1,12 +1,68 @@
-# Partie analyse : Identification pièces de puzzle
+# Analyse : Identification de pièces de puzzle
 
 ## Contributeurs
 
-- p2006010 - [Boulet Benjamin]
+- **p2006010 - Boulet Benjamin : [Partie Analyse]**
+- **p2020351 - Faustmann Lucas : [Partie Synthèse]**
 
-## Demarches utilisées
+## Compilation
+
+Voici comment installer Python et les bibliothèques requises sur différents systèmes d'exploitation.
+
+#### Windows
+
+1. Téléchargez et installez Python depuis le site officiel: https://www.python.org/downloads/
+
+2. Ouvrez l'invite de commandes (cmd) et installez les bibliothèques requises en utilisant la commande `pip` :
+
+```bash
+pip install opencv-python-headless numpy matplotlib
+```
+
+#### macOS
+
+1. Téléchargez et installez Python depuis le site officiel: https://www.python.org/downloads/
+
+2. Ouvrez le terminal et installez les bibliothèques requises en utilisant la commande `pip` :
+
+```bash
+pip3 install opencv-python-headless numpy matplotlib
+```
+
+#### Linux (Ubuntu/Debian)
+
+1. Ouvrez le terminal et installez Python3 et pip3 en utilisant la commande suivante :
+
+```bash
+sudo apt-get install python3 python3-pip
+```
+
+2. Installez les bibliothèques requises en utilisant la commande `pip` :
+
+```bash
+pip3 install opencv-python-headless numpy matplotlib
+```
+---
+**Une fois que Python et les bibliothèques requises sont installés, vous pouvez exécuter le programme en utilisant la commande suivante :**
+
+```bash
+python3 main.py
+```
+
+---
+
+**image d'origine :**
 
 ![image d'origine :](./images/startImage.jpg)
+
+## Objectif
+
+- **Obtenir un masque binaire pour différencier les pièces du puzzle du fond**
+- **Identifier les pièces du puzzle indépendement les unes des autres**
+- **Extraire, de l'image originale et des différents masques, différentes vue**
+- **Identifier et extraire, les contours de la pièce afin d'identifier les trous et les protubérances**
+
+## Demarches utilisées
 
 ### 1. Création du masque binaire
 
@@ -21,7 +77,9 @@
 - On applique ensuite plusieurs fermeture avec **`cv2.morphologyEx(image,cv2.MORPH_CLOSE, noyau)`**  
    et ouvertures avec  
    **`cv2.morphologyEx(image, cv2.MORPH_OPEN, noyau)`**  
-   pour supprimer les petits trous et les petits points blancs
+   pour supprimer les petits trous et les petits points blancs  
+
+**Masque binaire :**  
 
 ![masque binaire :](./images/masque_binaire.jpg)
 
@@ -31,43 +89,57 @@
 
 - on les trie par odre croissant de haut gauche à bas droite ( afin de nous faciliter la tache pour la suite )
 
+**Pièces triées :**  
+
+![Pièces triées :](./images/pieces_couleurs_numérotées.jpg)
+
 ### 3. Extraction des pièces
 
-#### Extraction des masques :
+#### Extraction des masques
 
 - on créer un maque vide de la taille de du masque binaire
 
-- pour chaque pièce, indépendement des autres, on dessine le contour de la pièce sur le masque vide et on fait un **`bitwise_and(masque binaire, masque binaire, mask=notre masque précendent)`** ( ET ) avec le masque binaire pour ne garder que le masque de la pièce.
+- pour chaque pièce, indépendement des autres, on dessine le contour de la pièce sur le masque vide et on fait un **`bitwise_and(masque binaire, masque binaire, mask=notre masque précendent)`** ( ET ) avec le masque binaire pour ne garder que le masque de la pièce.  
 
-![exemple, masque pièce ( grand ) : ](./images/wideMask/pièce7.jpg)
+**Exemple, masque pièce ( grand ) :**  
 
-- On rogne ensuite avec le boundingRect du contour de la pièce pour extraire juste le masque de la pièce ( rogné )
-jpg
-![exemple, masque pièce rogné :](./images/cutMask/pièce7.jpg)
+![Exemple, masque pièce ( grand ) : ](./Mask/wideMask/pièce7.jpg)
+
+- On rogne ensuite avec le boundingRect du contour de la pièce pour extraire juste le masque de la pièce ( rogné )  
+
+**Exemple, masque pièce rogné :**  
+
+![Exemple, masque pièce rogné :](./Mask/cutMask/pièce7.jpg)
 
 ---
 
-#### Extraction des pièces :
+#### Extraction des pièces
 
 - On prend le masque de la pièce trouvé précedemment et on fait un **`bitwise_and(image de base, image de base, mask=masque trouvé précedemment)`** ( ET ) avec l'image de base
 
-![exemple, image pièce n°7 :](./images/widePieces/pièce7.jpg)
+**Exemple, image pièce n°7 :**  
+
+![Exemple, image pièce n°7 :](./images/widePieces/pièce7.jpg)
 
 - De même, on rogne avec le boundingRect du contour de la pièce pour extraire juste la pièce ( rogné ).
 
-![exemple, image pièce n°7 rogné :](./images/cutPieces/pièce7.jpg)
+**Exemple, image pièce n°7 rogné :**  
+
+![Exemple, image pièce n°7 rogné :](./images/cutPieces/pièce7.jpg)
 
 ---
 
-#### On enregistre les images donnée dans leur dossier réspéctif :
+#### On enregistre les images donnée dans leur dossier réspéctif
 
 - **Mask/** , avec **`wideMask/`** pour les grands masques et **`cutMask/`** pour les masques rognés
 
 - **images/**, avec pareil, **`widePieces/`** et **`cutPieces/`**
 
-#### Après toute ces étapes, on arrive à afficher la pièce coupé, son masque, ses contours :
+#### Après toute ces étapes, on arrive à afficher la pièce coupé, son masque, ses contours
 
-![exemple, pièce n°7 découpage :](./images/piece_decoupe.jpg)
+**Exemple, pièce n°7 découpage :**  
+
+![Exemple, pièce n°7 découpage :](./images/piece_découpe.png)
 
 ---
 
@@ -104,6 +176,40 @@ jpg
 
 #### On applique cette methode sur toutes les pièces et on enregistre le tout dans `image/infoPieces`
 
-![exemple, pièce n°7 découpage :](./images/infoPieces/pièce7.jpg) 
+**Exemple, pièce n°7 découpage :**
+
+![Exemple, pièce n°7 découpage :](./images/infoPieces/pièce7.jpg)
+
+**Exemple, pièce n°11 découpage :**
+
+![Exemple, pièce n°11 découpage :](./images/infoPieces/pièce11.jpg)
+
+**P :** Protubérence
+**T :** Trou
 
 ---
+
+## Explication fonction sort_pieces()
+
+La fonction sort_contours() prend en entrée une liste de contours, une image et une valeur de tolérance en pourcentage (par défaut 0.1). Elle trie les contours en fonction de leur position dans l'image, d'abord en lignes, puis en colonnes.
+
+- Tout d'abord, la fonction trie les contours en fonction de leur position en Y, puis en X.
+
+- Ensuite, elle calcule une valeur de tolérance verticale en fonction de la hauteur de l'image et du rapport de tolérance donné. Cette tolérance est utilisée pour déterminer si deux contours sont sur la même ligne ( ici on découpe l'img 10% par 10% de img.shape[0] donc l'axe y).  
+
+- Les contours sont ensuite parcourus et regroupés en lignes en fonction de leur position en Y et de la tolérance.
+
+- Une fois que tous les contours sont regroupés en lignes, chaque ligne est triée en fonction de la position en X des contours.  
+
+- Enfin, la fonction fusionne les contours triés par ligne pour obtenir la liste finale des contours triés par lignes et colonnes.
+
+La fonction retourne la liste des contours triés en fonction de leur position en lignes et en colonnes dans l'image.
+
+`Si la valeur de tolerance_ratio était trop faible, des contours appartenant à la même ligne pourraient être considérés comme étant sur des lignes difféntes car les pièces ne sont pas éxactement sur le même axe et n'ont pas tous la même hauteur. En revanche, si la valeur était trop élevée, des contours appartenant à des lignes différentes pourraient être regroupés dans la même ligne.`
+
+---
+
+## Tests réalisés et complications rencontrées
+
+Pour obtenir le masque binaire, j'ai commencé au début du projet en utilisant directement l'image en niveaux de gris en utilisant les Tresholds de cv2. Cependant, les résultats n'étaient pas satisfaisants car les pièces étaient souvent mal détectées. J'ai donc décidé d'utiliser d'autres canaux de couleurs pour obtenir un meilleur résultat. Je me suis finalement arrêter sur les canaux L, A et B de l'espace de couleur LAB. J'ai ensuite fait ma propre fonction de seuillage sur les 3 canaux pour obtenir un masque binaire. J'ai ensuite tester plusieurs, **...beaucoup**, de combinaisons de transformations morphologiques pour obtenir un masque binaire beaucoup plus propre.
+

@@ -31,7 +31,7 @@ clearFolder("./images/cutPieces/*")
 clearFolder("./images/widePieces/*")
 clearFolder("./images/infoPieces/*")
 clearFolder("./images/masque_binaire.jpg")
-clearFolder("./images/piece_découpe.jpg")
+clearFolder("./images/piece_découpe.png")
 clearFolder("./images/pieces_couleurs_numérotées.jpg")
 
 
@@ -270,17 +270,17 @@ def view_piece(
     list_widePieces_mask=list_widePieces_mask,
 ):
     # partage le graphique en 4 colonnes
-    fig, axs = plt.subplots(1, 4, figsize=(20, 20))
+    fig, axs = plt.subplots(2, 2, figsize=(10, 10))
     fig.suptitle("Vertically stacked subplots")
 
-    axs[0].imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    axs[0].set_title("Image originale")
-    axs[1].imshow(list_widePieces_mask[pieceIndex], cmap="gray")
-    axs[1].set_title("Masque de la pièce")
-    axs[2].imshow(cv2.cvtColor(list_cutPieces[pieceIndex], cv2.COLOR_BGR2RGB))
-    axs[2].set_title("Pièce coupée")
-    axs[3].imshow(list_cutPieces_mask[pieceIndex], cmap="gray")
-    axs[3].set_title("Masque de la pièce coupée")
+    axs[0][0].imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    axs[0][0].set_title("Image originale")
+    axs[0][1].imshow(list_widePieces_mask[pieceIndex], cmap="gray")
+    axs[0][1].set_title("Masque de la pièce")
+    axs[1][0].imshow(cv2.cvtColor(list_cutPieces[pieceIndex], cv2.COLOR_BGR2RGB))
+    axs[1][0].set_title("Pièce coupée")
+    axs[1][1].imshow(list_cutPieces_mask[pieceIndex], cmap="gray")
+    axs[1][1].set_title("Masque de la pièce coupée")
 
     # plt.show()
     # enregistre l'image du graphique dans un fichier
@@ -321,8 +321,6 @@ def extract_infos_pieces():
             # on simplifie les contours pour avoir moins de points
 
             epsilon = 0.01 * cv2.arcLength(contour[0], True)
-            # pourquoi contour[0] ? car on a qu'un seul contour par pièce
-            # True pour dire que le contour est fermé
             approx = cv2.approxPolyDP(contour[0], epsilon, True)
 
             piece_cutWithCnt = cv2.drawContours(
