@@ -39,11 +39,11 @@
 
 - pour chaque pièce, indépendement des autres, on dessine le contour de la pièce sur le masque vide et on fait un **`bitwise_and(masque binaire, masque binaire, mask=notre masque précendent)`** ( ET ) avec le masque binaire pour ne garder que le masque de la pièce.
 
-![masque pièce ( grand ) : ](./images/wideMask/7.png)
+![exemple, masque pièce ( grand ) : ](./images/wideMask/7.png)
 
 - On rogne ensuite avec le boundingRect du contour de la pièce pour extraire juste le masque de la pièce ( rogné )
 
-![masque pièce rogné :](./images/cutMask/7.png)
+![exemple, masque pièce rogné :](./images/cutMask/7.png)
 
 ---
 
@@ -51,11 +51,11 @@
 
 - On prend le masque de la pièce trouvé précedemment et on fait un **`bitwise_and(image de base, image de base, mask=masque trouvé précedemment)`** ( ET ) avec l'image de base
 
-![image pièce n°7 :](./images/widePieces/7.png)
+![exemple, image pièce n°7 :](./images/widePieces/7.png)
 
 - De même, on rogne avec le boundingRect du contour de la pièce pour extraire juste la pièce ( rogné ).
 
-![image pièce n°7 rogné :](./images/cutPieces/7.png)
+![exemple, image pièce n°7 rogné :](./images/cutPieces/7.png)
 
 ---
 
@@ -67,7 +67,7 @@
 
 #### Après toute ces étapes, on arrive à afficher la pièce coupé, son masque, ses contours :
 
-![exemple, pièce n°7 découpage :](./images/piece_découpe7.png)
+![exemple, pièce n°7 découpage :](./images/piece_decoupe.png)
 
 ---
 
@@ -103,5 +103,7 @@
 - Dans les 2 cas, on calcul la moyenne des points pour trouver le centre de la protubérence ou du trou et on affiche un P ou un T sur ce centre.
 
 #### On applique cette methode sur toutes les pièces et on enregistre le tout dans `image/infoPieces`
+
+![exemple, pièce n°7 découpage :](./images/infoPieces/pièce 7.png) 
 
 ---

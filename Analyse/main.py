@@ -1,3 +1,4 @@
+import time
 import cv2
 import numpy as np
 import sys
@@ -7,11 +8,7 @@ import glob
 
 
 # création de l'image à partir d'un fichier
-img = cv2.imread("./images/startImage.jpg")
 
-cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-img = img[5:-5, 5:-5]
 
 list_widePieces = []
 list_widePieces_mask = []
@@ -28,15 +25,30 @@ def clearFolder(filename):
         os.remove(f)
 
 
+clearFolder("./Mask/cutMask/*")
+clearFolder("./Mask/wideMask/*")
+clearFolder("./images/cutPieces/*")
+clearFolder("./images/widePieces/*")
+clearFolder("./images/infoPieces/*")
+clearFolder("./images/masque_binaire.jpg")
+clearFolder("./images/piece_découpe.jpg")
+clearFolder("./images/pieces_couleurs_numérotées.jpg")
+
+
 def saveInFile(list, path, name=""):
     for i, piece in enumerate(list):
-        print("Sauvegarde de " + path + name + ".jpg : ", end="")
+        # print("Sauvegarde de " + path + name + "pièce" + str(i) + ".jpg : ", end="")
         if cv2.imwrite(
             path + (("pièce " + str(i)) if name == "" else name) + ".jpg", piece
         ):
-            print("succès")
+            # print("succès")
+            continue
+
         else:
             print("Erreur")
+            return False
+
+    return True
 
 
 def random_non_red_color():
@@ -49,13 +61,6 @@ def random_non_red_color():
     new_col_B = min(new_col_B, 255)
 
     return (new_col_R, new_col_G, new_col_B)
-
-
-clearFolder("./Mask/cutMask/*")
-clearFolder("./Mask/wideMask/*")
-clearFolder("./images/cutPieces/*")
-clearFolder("./images/widePieces/*")
-clearFolder("./images/infoPieces/*")
 
 
 def sort_contours(contours, img, tolerance_ratio=0.1):
@@ -96,7 +101,14 @@ def sort_contours(contours, img, tolerance_ratio=0.1):
     return sorted_contours
 
 
-def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
+img = cv2.imread("./images/startImage.jpg")
+
+cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+img = img[5:-5, 5:-5]
+
+
+def createBinaryMask(img, tolerance, tolA=0, tolB=0, tolL=0):
     imgBlured = cv2.medianBlur(img, 5)
 
     # on convertit l'image en LAB
@@ -112,7 +124,7 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
     dominant_color_a = np.argmax(hist_a)
     dominant_color_b = np.argmax(hist_b)
 
-    print("dominant_color : ", dominant_color_a, dominant_color_b)
+    # print("dominant_color : ",dominant_color_l, dominant_color_a, dominant_color_b)
 
     # on parcourt l'image
     for i in range(masqueB.shape[0]):
@@ -120,9 +132,9 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
             # si la couleur est trop proche de la couleur dominante
             # on la considère comme étant la couleur dominante
             if (
-                abs(masqueB[i, j][1] - dominant_color_a) < tolerance + tolA
+                abs(masqueB[i, j][0] - dominant_color_l) < tolerance + tolL
+                and abs(masqueB[i, j][1] - dominant_color_a) < tolerance + tolA
                 and abs(masqueB[i, j][2] - dominant_color_b) < tolerance + tolB
-                and abs(masqueB[i, j][0] - dominant_color_l) < tolerance + tolL
             ):
                 masqueB[i, j] = 0
             else:
@@ -148,27 +160,34 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
     kernel = np.ones((1, 1), np.uint8)
     masqueB = cv2.erode(masqueB, kernel, iterations=1)
 
-    img_labL = masqueB[:, :, 0]
+    masqueB = masqueB[:, :, 0]
 
     # cv2.imshow("img_labL", masqueB)
-    saveInFile([masqueB], "./images/", "masque_binaire")
+    if saveInFile([masqueB], "./images/", "masque_binaire"):
+        print("masque_binaire enregistré avec succès", end="\n\n")
+        return masqueB, True
+    else:
+        print("masque_binaire non enregistré")
+        return False
 
+
+def extractPieces(masqueB):
     # # find contours
     contours, hierarchy = cv2.findContours(
-        img_labL, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+        masqueB, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
     )
 
     # Regarde si les contours ont été trouvés
     if len(contours) > 0:
-        print("Nombre de contours trouvés = " + str(len(contours)))
+        # print("Nombre de contours trouvés = " + str(len(contours)))
 
-        contours = sort_contours(contours, img_labL)
+        contours = sort_contours(contours, masqueB)
 
         # enleve le dernier contour car c'est le logo
         contours = contours[:-1]
 
         # Créer une image vierge de la même taille que l'original
-        img_pieces = np.zeros_like(img_labL)
+        img_pieces = np.zeros_like(masqueB)
 
         img_pieces = cv2.cvtColor(img_pieces, cv2.COLOR_GRAY2RGB)
 
@@ -200,13 +219,13 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
 
         for i, cnt in enumerate(contours):
             # Créer un masque vide
-            mask = np.zeros_like(img_labL)
+            mask = np.zeros_like(masqueB)
 
             # Dessiner le contour sur le masque pour isoler la pièce
             cv2.drawContours(mask, contours, i, 255, -1)
 
             # Extraire la pièce de l'image originale
-            piece = cv2.bitwise_and(img_labL, img_labL, mask=mask)
+            piece = cv2.bitwise_and(masqueB, masqueB, mask=mask)
 
             list_widePieces_mask.append(piece)
 
@@ -227,23 +246,21 @@ def Test_5(img, tolerance, tolA=0, tolB=0, tolL=0):
             cutPiece = img[y : y + h, x : x + w]
             list_cutPieces.append(cutPiece)
 
+        if (
+            saveInFile(list_cutPieces_mask, "Mask/cutMask/")
+            & saveInFile(list_widePieces_mask, "Mask/wideMask/")
+            & saveInFile(list_cutPieces, "images/cutPieces/")
+            & saveInFile(list_widePieces, "images/widePieces/")
+        ):
+            print("Pièces enregistrées avec succès", end="\n\n")
+            return True
+
     else:
         print("No puzzle pieces found")
-
-    return masqueB
-
-
-print("Test 5")
-Test_5(img, 12, 4, 5, 10)
+        return False
 
 
-saveInFile(list_cutPieces_mask, "Mask/cutMask/")
-saveInFile(list_widePieces_mask, "Mask/wideMask/")
-saveInFile(list_cutPieces, "images/cutPieces/")
-saveInFile(list_widePieces, "images/widePieces/")
-
-
-# Affiche les différentes vue d'une pièce
+# Crée les différentes vue d'une pièce
 def view_piece(
     pieceIndex,
     img=img,
@@ -263,11 +280,16 @@ def view_piece(
     axs[2].imshow(cv2.cvtColor(list_cutPieces[pieceIndex], cv2.COLOR_BGR2RGB))
     axs[2].set_title("Pièce coupée")
     axs[3].imshow(list_cutPieces_mask[pieceIndex], cmap="gray")
-    axs[3].set_title("Pièce coupée avec masque")
+    axs[3].set_title("Masque de la pièce coupée")
 
     # plt.show()
     # enregistre l'image du graphique dans un fichier
-    plt.savefig("images/piece_découpe" + str(pieceIndex) + ".png")
+    plt.savefig("images/piece_découpe.png")
+
+    print(
+        "Vues de la pièce " + str(pieceIndex) + " enregistrée avec succès", end="\n\n"
+    )
+    return True
 
 
 # Compte le nombre de contact entre une ligne et le contour d'une pièce
@@ -285,136 +307,210 @@ def count_line_contacts(line, contour_mask, image):
 
 
 # Affiche les différentes vue d'une pièce avec ses infos (Protubérances, Trous)
-def displayPieceCut(pieceIndex):
-    cv2.cvtColor(list_cutPieces[pieceIndex], cv2.COLOR_BGR2RGB)
+def extract_infos_pieces():
+    for pieceIndex in range(len(list_cutPieces)):
+        cv2.cvtColor(list_cutPieces[pieceIndex], cv2.COLOR_BGR2RGB)
 
-    contour, _ = cv2.findContours(
-        list_cutPieces_mask[pieceIndex], cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
-    )
-
-    cutedpiece = list_cutPieces[pieceIndex].copy()
-    # Regarde si les contours ont été trouvés
-    if len(contour) > 0:
-        # on simplifie les contours pour avoir moins de points
-
-        epsilon = 0.01 * cv2.arcLength(contour[0], True)
-        # pourquoi contour[0] ? car on a qu'un seul contour par pièce
-        # True pour dire que le contour est fermé
-        approx = cv2.approxPolyDP(contour[0], epsilon, True)
-
-        piece_cutWithCnt = cv2.drawContours(
-            cutedpiece, [approx], -1, (255, 0, 255), 2, cv2.LINE_AA
+        contour, _ = cv2.findContours(
+            list_cutPieces_mask[pieceIndex], cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
         )
 
-    # dessine des droitres partant de p1 {x1=40, y1=0} vers p2 {x2=40, y2=max} avec une épaisseur de 2 pixels
-    cv2.line(piece_cutWithCnt, (18, 0), (23, 1000), (0, 0, 255), 1)
-    # dessine des droitres partant de p1 {x1=0, y1=40} vers p2 {x2=max, y2=40} avec une épaisseur de 2 pixels
-    cv2.line(piece_cutWithCnt, (0, 23), (1000, 23), (0, 0, 255), 1)
+        cutedpiece = list_cutPieces[pieceIndex].copy()
+        # Regarde si les contours ont été trouvés
+        if len(contour) > 0:
+            # on simplifie les contours pour avoir moins de points
 
-    # dessine des droitres partant de p1 {x1=piece_cutWithCnt.shape[1]-20, y1=0} vers p2 {x2=shape[1]-20, y2=shpae[0]} avec une épaisseur de 1 pixel
-    cv2.line(
-        piece_cutWithCnt,
-        (piece_cutWithCnt.shape[1] - 23, 0),
-        (piece_cutWithCnt.shape[1] - 23, piece_cutWithCnt.shape[0]),
-        (0, 0, 255),
-        1,
-    )
-    # dessine des droitres partant de p1 {x1=0, y1=shape[0]-20} vers p2 {x2=shape[1], y2=shape[0]-20} avec une épaisseur de 1 pixel
-    cv2.line(
-        piece_cutWithCnt,
-        (0, piece_cutWithCnt.shape[0] - 23),
-        (piece_cutWithCnt.shape[1], piece_cutWithCnt.shape[0] - 23),
-        (0, 0, 255),
-        1,
-    )
+            epsilon = 0.01 * cv2.arcLength(contour[0], True)
+            # pourquoi contour[0] ? car on a qu'un seul contour par pièce
+            # True pour dire que le contour est fermé
+            approx = cv2.approxPolyDP(contour[0], epsilon, True)
 
-    # Récupérez le masque du contour pour faciliter la détection des contacts
-    contour_mask = cv2.drawContours(
-        np.zeros_like(list_cutPieces_mask[pieceIndex]), contour, -1, 255, 1
-    )
+            piece_cutWithCnt = cv2.drawContours(
+                cutedpiece, [approx], -1, (255, 0, 255), 2, cv2.LINE_AA
+            )
 
-    # Définissez les lignes à tracer
-    lines = [
-        ([(18, y) for y in range(piece_cutWithCnt.shape[0])], "Vertical 1"),
-        (
-            [
-                (piece_cutWithCnt.shape[1] - 23, y)
-                for y in range(piece_cutWithCnt.shape[0])
-            ],
-            "Vertical 2",
-        ),
-        ([(x, 23) for x in range(piece_cutWithCnt.shape[1])], "Horizontal 1"),
-        (
-            [
-                (x, piece_cutWithCnt.shape[0] - 23)
-                for x in range(piece_cutWithCnt.shape[1])
-            ],
-            "Horizontal 2",
-        ),
-    ]
+        # dessine des droitres partant de p1 {x1=18, y1=0} vers p2 {x2=4180, y2=max} avec une épaisseur de 2 pixels
+        cv2.line(piece_cutWithCnt, (18, 0), (23, 1000), (0, 0, 255), 1)
+        # dessine des droitres partant de p1 {x1=0, y1=23} vers p2 {x2=max, y2=23} avec une épaisseur de 2 pixels
+        cv2.line(piece_cutWithCnt, (0, 23), (1000, 23), (0, 0, 255), 1)
 
-    centers = []
-
-    # Parcourez les lignes et comptez les contacts avec les contours
-    for line, line_name in lines:
-        contacts, contacts_points = count_line_contacts(
-            line, contour_mask, piece_cutWithCnt
+        # dessine des droitres partant de p1 {x1=piece_cutWithCnt.shape[1]-23, y1=0} vers p2 {x2=shape[1]-23, y2=shpae[0]} avec une épaisseur de 1 pixel
+        cv2.line(
+            piece_cutWithCnt,
+            (piece_cutWithCnt.shape[1] - 23, 0),
+            (piece_cutWithCnt.shape[1] - 23, piece_cutWithCnt.shape[0]),
+            (0, 0, 255),
+            1,
         )
-        if contacts == 4:
-            # on fait la moyenne des points de contact pour trouver le centre du trou
-            center = (
-                int(np.mean([point[0] for point in contacts_points])),
-                int(np.mean([point[1] for point in contacts_points])),
-            )
+        # dessine des droitres partant de p1 {x1=0, y1=shape[0]-23} vers p2 {x2=shape[1], y2=shape[0]-23} avec une épaisseur de 1 pixel
+        cv2.line(
+            piece_cutWithCnt,
+            (0, piece_cutWithCnt.shape[0] - 23),
+            (piece_cutWithCnt.shape[1], piece_cutWithCnt.shape[0] - 23),
+            (0, 0, 255),
+            1,
+        )
 
-            centers.append((center, "T"))
-        elif contacts == 2:
-            # on fait la différence entre les deux points pour trouver la longueur du bord
-            length = int(
-                np.sqrt(
-                    (contacts_points[0][0] - contacts_points[1][0]) ** 2
-                    + (contacts_points[0][1] - contacts_points[1][1]) ** 2
-                )
+        # Récupérez le masque du contour pour faciliter la détection des contacts
+        contour_mask = cv2.drawContours(
+            np.zeros_like(list_cutPieces_mask[pieceIndex]), contour, -1, 255, 1
+        )
+
+        # Définissez les lignes à tracer
+        lines = [
+            ([(18, y) for y in range(piece_cutWithCnt.shape[0])], "Vertical 1"),
+            (
+                [
+                    (piece_cutWithCnt.shape[1] - 23, y)
+                    for y in range(piece_cutWithCnt.shape[0])
+                ],
+                "Vertical 2",
+            ),
+            ([(x, 23) for x in range(piece_cutWithCnt.shape[1])], "Horizontal 1"),
+            (
+                [
+                    (x, piece_cutWithCnt.shape[0] - 23)
+                    for x in range(piece_cutWithCnt.shape[1])
+                ],
+                "Horizontal 2",
+            ),
+        ]
+
+        centers = []
+
+        # Parcoure les lignes et compte les contacts avec les contours
+        for line, line_name in lines:
+            contacts, contacts_points = count_line_contacts(
+                line, contour_mask, piece_cutWithCnt
             )
-            # si elle est supérieure à 60 pixels, on considère que c'est le corps de la pièce
-            if length > 60:
-                continue
-            else:
+            if contacts == 4:
                 # on fait la moyenne des points de contact pour trouver le centre du trou
                 center = (
                     int(np.mean([point[0] for point in contacts_points])),
                     int(np.mean([point[1] for point in contacts_points])),
                 )
 
-                centers.append((center, "P"))
+                centers.append((center, "T"))
+            elif contacts == 2:
+                # on fait la différence entre les deux points pour trouver la longueur du bord
+                length = int(
+                    np.sqrt(
+                        (contacts_points[0][0] - contacts_points[1][0]) ** 2
+                        + (contacts_points[0][1] - contacts_points[1][1]) ** 2
+                    )
+                )
+                # si elle est supérieure à 60 pixels, on considère que c'est le corps de la pièce
+                if length > 60:
+                    continue
+                else:
+                    # on fait la moyenne des points de contact pour trouver le centre du trou
+                    center = (
+                        int(np.mean([point[0] for point in contacts_points])),
+                        int(np.mean([point[1] for point in contacts_points])),
+                    )
 
-        else:
-            print(
-                f"{line_name} n'a pas de trou ni de protubérance, ce qui est impossible"
+                    centers.append((center, "P"))
+
+            else:
+                print(
+                    f"{line_name} n'a pas de trou ni de protubérance, ce qui est impossible"
+                )
+
+        for center, label in centers:
+            cv2.circle(piece_cutWithCnt, center, 2, (0, 255, 0), -1)
+            cv2.putText(
+                piece_cutWithCnt,
+                label,
+                (center[0] + 5, center[1] + 5),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.4,
+                (0, 255, 0),
+                2,
             )
 
-    for center, label in centers:
-        cv2.circle(piece_cutWithCnt, center, 2, (0, 255, 0), -1)
-        cv2.putText(
-            piece_cutWithCnt,
-            label,
-            (center[0] + 5, center[1] + 5),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.4,
-            (0, 255, 0),
-            2,
-        )
+        list_cutPiecesWithInfos.append(piece_cutWithCnt)
 
-    list_cutPiecesWithInfos.append(piece_cutWithCnt)
+    if saveInFile(list_cutPiecesWithInfos, "images/infoPieces/"):
+        print("Infos des pièces enregistrées avec succès", end="\n\n")
+        return True
+    else:
+        return False
 
 
-view_piece(7)
+# -------------------------------------------------------------------------------
 
-[displayPieceCut(i) for i in range(len(list_cutPieces))]
 
-saveInFile(list_cutPiecesWithInfos, "images/infoPieces/")
+print("Début du programme", end="\n\n")
 
-print("Fin du programme !")
+start_full_time = time.time()
+
+# -----------------------------------------------------------------------------#
+
+print("-------------------- Creating binary mask... --------------------", end="\n\n")
+start_time = time.time()
+
+masqueB, isGood = createBinaryMask(img, 12, 4, 5, 10)
+
+if isGood:
+    # print icone grand format vert
+    print("----- Creating binary mask..." + "\033[92m" + " - OK" + "\033[0m", end="\n")
+else:
+    # print icone grand format rouge
+    print("----- Creating binary mask..." + "\033[91m" + " - X" + "\033[0m", end="\n")
+
+print("Temps d execution : %s secondes ---" % (time.time() - start_time), end="\n\n")
+
+# -----------------------------------------------------------------------------#
+
+print("-------------------- Extracting pieces... --------------------", end="\n\n")
+start_time = time.time()
+
+if extractPieces(masqueB):
+    # print icone grand format vert
+    print("----- Extracting pieces..." + "\033[92m" + "- OK" + "\033[0m", end="\n")
+else:
+    # print icone grand format rouge
+    print("----- Extracting pieces..." + "\033[91m" + "- X" + "\033[0m", end="\n")
+
+
+print("Temps d execution : %s secondes ---" % (time.time() - start_time), end="\n\n")
+
+# -----------------------------------------------------------------------------#
+
+print("-------------------- Extracting views... --------------------", end="\n\n")
+start_time = time.time()
+
+if view_piece(7):
+    # print icone grand format vert
+    print("----- Extracting views..." + "\033[92m" + "- OK" + "\033[0m", end="\n")
+else:
+    # print icone grand format rouge
+    print("----- Extracting views..." + "\033[91m" + "- X" + "\033[0m", end="\n")
+
+print("Temps d execution : %s secondes ---" % (time.time() - start_time), end="\n\n")
+
+# -----------------------------------------------------------------------------#
+
+print(
+    "-------------------- Extracting infos pieces... --------------------", end="\n\n"
+)
+start_time = time.time()
+
+if extract_infos_pieces():
+    # print icone grand format vert
+    print(
+        "----- Extracting infos pieces..." + "\033[92m" + "- OK" + "\033[0m", end="\n"
+    )
+else:
+    # print icone grand format rouge
+    print("----- Extracting infos pieces..." + "\033[91m" + "- X" + "\033[0m", end="\n")
+
+print("Temps d execution : %s secondes ---" % (time.time() - start_time), end="\n\n")
+
+# -----------------------------------------------------------------------------#
+
+print("Fin du programme !", end="\n\n")
+print("Temps d execution total : %s secondes ---" % (time.time() - start_full_time))
 
 
 cv2.destroyAllWindows()
