@@ -2,7 +2,6 @@
 
 ## Table des matières
 
-- [Contributeurs](#contributeurs)
 - [Introduction](#introduction)
   - [Objectif](#objectif)
 - [Compilation](#compilation)
