@@ -99,7 +99,9 @@ Le fichier `projets/tp.cpp` contient le code principal du projet. C'est dans ce 
 
 # Difficultés rencontrées et essais
 
-- Nous avons eu du mal à comprendre comment implémenter les reflets et miroirs dans le projet. Nos rayons réfléchis ne donnaient pas le résultat attendu. Nous avons donc décidé de ne pas les implémenter.
+- Nous avons eu du mal à comprendre comment implémenter les reflets et miroirs dans le projet. Nos rayons réfléchis ne donnaient pas le résultat attendu (mauvais placement des objets, couleurs incohérentes, ...).
+  Nous avons donc décidé de ne pas les implémenter.
+  Peut-être qu'un TP spécialement dédié aux reflets et miroirs nous aurait aidé à mieux comprendre comment les implémenter dans le projet.
 
 # Ce que l'on aurait souhaité voir durant cette UE
 
