@@ -1,9 +1,45 @@
-# Analyse : Identification de pièces de puzzle
+# Analyse : Identification de pièces de puzzle en Python
+
+## Table des matières
+
+- [Contributeurs](#contributeurs)
+- [Introduction](#introduction)
+  - [Objectif](#objectif)
+- [Compilation](#compilation)
+  - [Windows](#windows)
+  - [macOS](#macos)
+  - [Linux (Ubuntu/Debian)](#linux-ubuntudebian)
+- [Demarches utilisées](#demarches-utilisées)
+  - [1. Création du masque binaire](#1-création-du-masque-binaire)
+  - [2. Détection des contours => Identification des pièces](#2-détection-des-contours--identification-des-pièces)
+  - [3. Extraction des pièces](#3-extraction-des-pièces)
+  - [4. Identification des contours](#4-identification-des-contours)
+- [Fonction sort_pieces() : explication](#fonction-sort_pieces--explication)
+- [Tests réalisés et complications rencontrées](#tests-réalisés-et-complications-rencontrées)
+
 
 ## Contributeurs
 
 - **p2006010 - Boulet Benjamin : [Partie Analyse]**
 - **p2020351 - Faustmann Lucas : [Partie Synthèse]**
+
+## Introduction
+
+Ce projet a pour but de créer un programme en Python qui permet d'identifier les pièces d'un puzzle.
+
+
+**image d'origine :**
+
+![image d'origine :](./images/startImage.jpg)
+
+### Objectif
+
+- **Obtenir un masque binaire pour différencier les pièces du puzzle du fond**
+- **Identifier les pièces du puzzle indépendement les unes des autres**
+- **Extraire, de l'image originale et des différents masques, différentes vue**
+- **Identifier et extraire, les contours de la pièce afin d'identifier les trous et les protubérances**
+
+
 
 ## Compilation
 
@@ -50,17 +86,6 @@ python3 main.py
 ```
 
 ---
-
-**image d'origine :**
-
-![image d'origine :](./images/startImage.jpg)
-
-## Objectif
-
-- **Obtenir un masque binaire pour différencier les pièces du puzzle du fond**
-- **Identifier les pièces du puzzle indépendement les unes des autres**
-- **Extraire, de l'image originale et des différents masques, différentes vue**
-- **Identifier et extraire, les contours de la pièce afin d'identifier les trous et les protubérances**
 
 ## Demarches utilisées
 
@@ -189,7 +214,7 @@ python3 main.py
 
 ---
 
-## Explication fonction sort_pieces()
+## Fonction sort_pieces() : explication
 
 La fonction sort_contours() prend en entrée une liste de contours, une image et une valeur de tolérance en pourcentage (par défaut 0.1). Elle trie les contours en fonction de leur position dans l'image, d'abord en lignes, puis en colonnes.
 
