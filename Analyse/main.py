@@ -39,7 +39,7 @@ def saveInFile(list, path, name=""):
     for i, piece in enumerate(list):
         # print("Sauvegarde de " + path + name + "pièce" + str(i) + ".jpg : ", end="")
         if cv2.imwrite(
-            path + (("pièce " + str(i)) if name == "" else name) + ".jpg", piece
+            path + (("pièce" + str(i)) if name == "" else name) + ".jpg", piece
         ):
             # print("succès")
             continue

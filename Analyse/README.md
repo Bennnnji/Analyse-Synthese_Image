@@ -39,11 +39,11 @@
 
 - pour chaque pièce, indépendement des autres, on dessine le contour de la pièce sur le masque vide et on fait un **`bitwise_and(masque binaire, masque binaire, mask=notre masque précendent)`** ( ET ) avec le masque binaire pour ne garder que le masque de la pièce.
 
-![exemple, masque pièce ( grand ) : ](./images/wideMask/7.png)
+![exemple, masque pièce ( grand ) : ](./images/wideMask/pièce7.png)
 
 - On rogne ensuite avec le boundingRect du contour de la pièce pour extraire juste le masque de la pièce ( rogné )
 
-![exemple, masque pièce rogné :](./images/cutMask/7.png)
+![exemple, masque pièce rogné :](./images/cutMask/pièce7.png)
 
 ---
 
@@ -51,11 +51,11 @@
 
 - On prend le masque de la pièce trouvé précedemment et on fait un **`bitwise_and(image de base, image de base, mask=masque trouvé précedemment)`** ( ET ) avec l'image de base
 
-![exemple, image pièce n°7 :](./images/widePieces/7.png)
+![exemple, image pièce n°7 :](./images/widePieces/pièce7.png)
 
 - De même, on rogne avec le boundingRect du contour de la pièce pour extraire juste la pièce ( rogné ).
 
-![exemple, image pièce n°7 rogné :](./images/cutPieces/7.png)
+![exemple, image pièce n°7 rogné :](./images/cutPieces/pièce7.png)
 
 ---
 
@@ -104,6 +104,6 @@
 
 #### On applique cette methode sur toutes les pièces et on enregistre le tout dans `image/infoPieces`
 
-![exemple, pièce n°7 découpage :](./images/infoPieces/pièce 7.png) 
+![exemple, pièce n°7 découpage :](./images/infoPieces/pièce7.png) 
 
 ---
