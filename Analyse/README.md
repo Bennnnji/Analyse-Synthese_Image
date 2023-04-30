@@ -18,7 +18,7 @@
 - [Tests réalisés et complications rencontrées](#tests-réalisés-et-complications-rencontrées)
 
 
-## Contributeurs
+## ✍️ Contributeurs
 
 - **p2006010 - Boulet Benjamin : [Partie Analyse]**
 - **p2020351 - Faustmann Lucas : [Partie Synthèse]**
